@@ -202,7 +202,7 @@ jobs:
               echo "Skipping example: $(basename "$file")"
             else
               echo "Running example $(basename "$file")..."
-              python "$file"
+              uv run --no-sync python "$file" || exit 1
             fi
           done
 
