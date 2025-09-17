@@ -284,6 +284,7 @@ jobs:
           enable-cache: true
       - name: Create and activate virtual environment, then install
         run: |
+          uv venv
           source .venv/bin/activate
           uv pip install dist/*.whl
       - name: Run docling
