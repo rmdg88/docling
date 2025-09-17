@@ -282,7 +282,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-      - name: Install package
-        run: uv pip install dist/*.whl
+      - name: Create and activate virtual environment, then install
+        run: |
+          source .venv/bin/activate
+          uv pip install dist/*.whl
       - name: Run docling
         run: docling --help
