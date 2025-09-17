@@ -280,11 +280,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Create and activate virtual environment, then install
+          activate-environment: true
+      - name: Install package
         run: |
-          uv venv
-          source .venv/bin/activate
           uv pip install dist/*.whl
       - name: Run docling
-        run: docling --help
+        run: uv run docling --help
