@@ -38,6 +38,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+          
       - name: pre-commit cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
@@ -48,6 +49,7 @@ jobs:
           key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
             pre-commit|${{ env.PY }}|
+
       - name: Install Python Dependencies
         run: uv sync --frozen --all-extras
 
@@ -111,12 +113,12 @@ jobs:
           run: |
             echo "--- Running tests ---"
             GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
-            echo "Running tests for $GROUP1"
+            echo "Running tests for GROUP1"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
 
         - name: Verify Cache Directories Content
           run: |
-            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
+            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -181,12 +183,12 @@ jobs:
           run: |
             echo "--- Running tests ---"
             GROUP2=$PYTEST_ML
-            echo "Running tests for $GROUP2"
+            echo "Running tests for GROUP2"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
 
         - name: Verify Cache Directories Content
           run: |
-            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
+            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -247,7 +249,7 @@ jobs:
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
-        - name: Activate venv and run examples
+        - name: Run examples
           run: |
             echo "--- Creating output directory ---"
             mkdir -p scratch
@@ -264,7 +266,7 @@ jobs:
                 echo "--- Running example $(basename "$file") ---"
                 
                 start_time=$SECONDS
-                # Use uv run directly without activating venv
+
                 uv run --no-sync python "$file" || exit 1
                 duration=$((SECONDS - start_time))
                 echo "Finished in ${duration}s."
@@ -282,7 +284,7 @@ jobs:
 
         - name: Verify Cache Directories Content
           run: |
-            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
+            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
 
   build-package:
     runs-on: ubuntu-latest
