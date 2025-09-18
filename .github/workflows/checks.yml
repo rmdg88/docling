@@ -100,17 +100,24 @@ jobs:
           with:
             path: |
               ~/.cache/huggingface
+              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+        
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
 
-        - name: Run GROUP1 tests
+        - name: Run tests for GROUP1
           run: |
             echo "--- Running tests ---"
             GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
-            echo "Running non PYTEST_ML"
+            echo "Running tests for $GROUP1"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
 
         - name: Upload coverage to Codecov
@@ -165,17 +172,24 @@ jobs:
           with:
             path: |
               ~/.cache/huggingface
+              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+        
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
 
-        - name: Run GROUP2 tests
+        - name: Run tests for GROUP2
           run: |
             echo "--- Running tests ---"
-            echo "Running PYTEST_ML"
             GROUP2=$PYTEST_ML
+            echo "Running tests for $GROUP2"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
 
         - name: Upload coverage to Codecov
@@ -230,11 +244,18 @@ jobs:
           with:
             path: |
               ~/.cache/huggingface
+              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
 
         - name: Activate venv and run examples
           run: |
