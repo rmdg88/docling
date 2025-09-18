@@ -38,8 +38,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          
-      - name: pre-commit cache key
+
+      - name: Set pre-commit cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - name: Cache pre-commit environments
@@ -67,8 +67,8 @@ jobs:
       steps:
         - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+        # - name: Grant permissions to APT cache directory
+        #   run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
         - name: Cache APT packages
           id: apt-cache
@@ -97,16 +97,15 @@ jobs:
         - name: Install Python Dependencies
           run: uv sync --frozen --all-extras
 
-        - name: Cache ML Models
+        - name: Cache Models
           uses: actions/cache@v4
           with:
             path: |
               ~/.cache/huggingface
-              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
-        - name: Pre-download ML Models
+        - name: Pre-download Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Run tests for GROUP1
@@ -116,10 +115,6 @@ jobs:
             echo "Running tests for GROUP1"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
 
-        - name: Verify Cache Directories Content
-          run: |
-            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
-
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
           uses: codecov/codecov-action@v4
@@ -127,6 +122,9 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: ./coverage.xml
             flags: run-tests-1
+
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-tests-2:
       runs-on: ubuntu-latest
@@ -137,8 +135,8 @@ jobs:
       steps:
         - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+        # - name: Grant permissions to APT cache directory
+        #   run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
         - name: Cache APT packages
           id: apt-cache
@@ -167,16 +165,15 @@ jobs:
         - name: Install Python Dependencies
           run: uv sync --frozen --all-extras
 
-        - name: Cache ML Models
+        - name: Cache Models
           uses: actions/cache@v4
           with:
             path: |
               ~/.cache/huggingface
-              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
-        - name: Pre-download ML Models
+        - name: Pre-download Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Run tests for GROUP2
@@ -186,10 +183,6 @@ jobs:
             echo "Running tests for GROUP2"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
 
-        - name: Verify Cache Directories Content
-          run: |
-            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
-
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
           uses: codecov/codecov-action@v4
@@ -197,6 +190,9 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: ./coverage.xml
             flags: run-tests-2
+
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-examples:
       runs-on: ubuntu-latest
@@ -207,8 +203,8 @@ jobs:
       steps:
         - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+        # - name: Grant permissions to APT cache directory
+        #   run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
         - name: Cache APT packages
           id: apt-cache
@@ -237,16 +233,15 @@ jobs:
         - name: Install Python Dependencies
           run: uv sync --frozen --all-extras
 
-        - name: Cache ML Models
+        - name: Cache Models
           uses: actions/cache@v4
           with:
             path: |
               ~/.cache/huggingface
-              ~/.cache/rapidocr
               ~/.EasyOCR/
             key: models-cache
 
-        - name: Pre-download ML Models
+        - name: Pre-download Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Run examples
@@ -282,9 +277,8 @@ jobs:
             cat "$summary_file"
             echo "==================================="
 
-        - name: Verify Cache Directories Content
-          run: |
-            find ~/ -type d \( -iname "*rapidocr*" -o -iname "*easyocr*" \)
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   build-package:
     runs-on: ubuntu-latest
