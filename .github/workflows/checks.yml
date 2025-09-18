@@ -105,8 +105,7 @@ jobs:
             key: models-cache-v1
 
         - name: Pre-download ML Models
-          run: |
-            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Activate venv and run-tests-1
           run: |
@@ -171,8 +170,7 @@ jobs:
             key: models-cache-v1
 
         - name: Pre-download ML Models
-          run: |
-            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Activate venv and run-tests-2
           run: |
@@ -237,8 +235,7 @@ jobs:
             key: models-cache-v1
 
         - name: Pre-download ML Models
-          run: |
-            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
         - name: Activate venv and run examples
           run: |
