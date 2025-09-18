@@ -116,9 +116,7 @@ jobs:
 
         - name: Verify Cache Directories Content
           run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
+            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -188,9 +186,7 @@ jobs:
 
         - name: Verify Cache Directories Content
           run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
+            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -286,10 +282,8 @@ jobs:
 
         - name: Verify Cache Directories Content
           run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
-            
+            find ~/ -type d \( -name "*rapidocr*" -o -name "*EasyOCR*" \)
+
   build-package:
     runs-on: ubuntu-latest
     strategy:
