@@ -32,6 +32,7 @@ jobs:
         python-version: ['3.12']
     steps:
       - uses: actions/checkout@v5
+
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
         with:
@@ -39,6 +40,7 @@ jobs:
           enable-cache: true
       - name: pre-commit cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
       - name: Cache pre-commit environments
         uses: actions/cache@v4
         with:
@@ -48,6 +50,7 @@ jobs:
             pre-commit|${{ env.PY }}|
       - name: Install Python Dependencies
         run: uv sync --frozen --all-extras
+
       - name: Check style
         run: |
           echo "--- Running pre-commit style checks ---"
@@ -55,192 +58,220 @@ jobs:
           pre-commit run --all-files
 
   run-tests-1:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        # python-version: ['3.12']
-    steps:
-      - uses: actions/checkout@v5
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-          sudo: true
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
-      - name: Cache ML Models
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/huggingface
-            /root/.EasyOCR/
-          key: models-cache-${{ matrix.python-version }}
-      - name: Pre-download ML Models
-        run: |
-          source .venv/bin/activate
-          python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
-      - name: Activate venv and run-tests-1
-        run: |
-          echo "--- Running tests ---"
-          source .venv/bin/activate
-          GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
-          echo "Running non PYTEST_ML"
-          pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
-      - name: Upload coverage to Codecov
-        if: inputs.push_coverage
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: run-tests-1
+      runs-on: ubuntu-latest
+      strategy:
+        fail-fast: false
+        matrix:
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+      steps:
+        - uses: actions/checkout@v5
+
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+
+        - name: Cache APT packages
+          id: apt-cache
+          uses: actions/cache@v4
+          with:
+            path: /var/cache/apt/archives
+            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+            restore-keys: |
+              apt-packages-${{ runner.os }}-
+
+        - name: Install System Dependencies
+          run: |
+            if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
+              sudo apt-get -qq update
+            fi
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+
+        - name: Set TESSDATA_PREFIX
+          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+
+        - name: Install uv and set the python version
+          uses: astral-sh/setup-uv@v6
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - name: Install Python Dependencies
+          run: uv sync --frozen --all-extras
+
+        - name: Cache ML Models
+          uses: actions/cache@v4
+          with:
+            path: |
+              ~/.cache/huggingface
+              ~/.EasyOCR/
+            key: models-cache-v1
+
+        - name: Pre-download ML Models
+          run: |
+            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+
+        - name: Activate venv and run-tests-1
+          run: |
+            echo "--- Running tests ---"
+            GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
+            echo "Running non PYTEST_ML"
+            pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
+
+        - name: Upload coverage to Codecov
+          if: inputs.push_coverage
+          uses: codecov/codecov-action@v4
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: ./coverage.xml
+            flags: run-tests-1
 
   run-tests-2:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        # python-version: ['3.12']
-    steps:
-      - uses: actions/checkout@v5
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-          sudo: true
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
-      - name: Cache ML Models
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/huggingface
-            /root/.EasyOCR/
-          key: models-cache-${{ matrix.python-version }}
-      - name: Pre-download ML Models
-        run: |
-          source .venv/bin/activate
-          python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
-      - name: Activate venv and run-tests-2
-        run: |
-          echo "--- Running tests ---"
-          source .venv/bin/activate
-          echo "Running PYTEST_ML"
-          GROUP2=$PYTEST_ML
-          pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
-      - name: Upload coverage to Codecov
-        if: inputs.push_coverage
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: run-tests-2
+      runs-on: ubuntu-latest
+      strategy:
+        fail-fast: false
+        matrix:
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+      steps:
+        - uses: actions/checkout@v5
+
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+
+        - name: Cache APT packages
+          id: apt-cache
+          uses: actions/cache@v4
+          with:
+            path: /var/cache/apt/archives
+            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+            restore-keys: |
+              apt-packages-${{ runner.os }}-
+
+        - name: Install System Dependencies
+          run: |
+            if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
+              sudo apt-get -qq update
+            fi
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+
+        - name: Set TESSDATA_PREFIX
+          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+
+        - name: Install uv and set the python version
+          uses: astral-sh/setup-uv@v6
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - name: Install Python Dependencies
+          run: uv sync --frozen --all-extras
+
+        - name: Cache ML Models
+          uses: actions/cache@v4
+          with:
+            path: |
+              ~/.cache/huggingface
+              ~/.EasyOCR/
+            key: models-cache-v1
+
+        - name: Pre-download ML Models
+          run: |
+            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+
+        - name: Activate venv and run-tests-2
+          run: |
+            echo "--- Running tests ---"
+            echo "Running PYTEST_ML"
+            GROUP2=$PYTEST_ML
+            pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
+
+        - name: Upload coverage to Codecov
+          if: inputs.push_coverage
+          uses: codecov/codecov-action@v4
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: ./coverage.xml
+            flags: run-tests-2
 
   run-examples:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        # python-version: ['3.12']
-    steps:
-      - uses: actions/checkout@v5
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-          sudo: true
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
-      - name: Cache ML Models
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/huggingface
-            /root/.EasyOCR/
-          key: models-cache-${{ matrix.python-version }}
-      - name: Pre-download ML Models
-        run: |
-          source .venv/bin/activate
-          python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
-      - name: Activate venv and run examples
-        run: |
-          echo "--- Creating output directory ---"
-          mkdir -p scratch
-          
-          echo "--- Running examples ---"
-          source .venv/bin/activate
-          
-          summary_file="runtime_summary.log"
-          echo "--- Example Runtimes ---" > "$summary_file"
-          
-          for file in docs/examples/*.py; do
-            if [[ "$(basename "$file")" =~ ${EXAMPLES_TO_SKIP} ]]; then
-              echo "Skipping example: $(basename "$file")"
-            else
-              echo "--- Running example $(basename "$file") ---"
-              
-              start_time=$SECONDS
-              uv run --no-sync python "$file" || exit 1
-              duration=$((SECONDS - start_time))
-              echo "Finished in ${duration}s."
-              
-              echo "$(basename "$file"): ${duration}s" >> "$summary_file"
+      runs-on: ubuntu-latest
+      strategy:
+        fail-fast: false
+        matrix:
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+      steps:
+        - uses: actions/checkout@v5
+
+        - name: Grant permissions to APT cache directory
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+
+        - name: Cache APT packages
+          id: apt-cache
+          uses: actions/cache@v4
+          with:
+            path: /var/cache/apt/archives
+            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+            restore-keys: |
+              apt-packages-${{ runner.os }}-
+
+        - name: Install System Dependencies
+          run: |
+            if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
+              sudo apt-get -qq update
             fi
-          done
-          
-          echo
-          echo "==================================="
-          echo "      Final Runtime Summary      "
-          echo "==================================="
-          cat "$summary_file"
-          echo "==================================="
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+
+        - name: Set TESSDATA_PREFIX
+          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+
+        - name: Install uv and set the python version
+          uses: astral-sh/setup-uv@v6
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - name: Install Python Dependencies
+          run: uv sync --frozen --all-extras
+
+        - name: Cache ML Models
+          uses: actions/cache@v4
+          with:
+            path: |
+              ~/.cache/huggingface
+              ~/.EasyOCR/
+            key: models-cache-v1
+
+        - name: Pre-download ML Models
+          run: |
+            python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+
+        - name: Activate venv and run examples
+          run: |
+            echo "--- Creating output directory ---"
+            mkdir -p scratch
+            
+            echo "--- Running examples ---"
+            
+            summary_file="runtime_summary.log"
+            echo "--- Example Runtimes ---" > "$summary_file"
+            
+            for file in docs/examples/*.py; do
+              if [[ "$(basename "$file")" =~ ${EXAMPLES_TO_SKIP} ]]; then
+                echo "Skipping example: $(basename "$file")"
+              else
+                echo "--- Running example $(basename "$file") ---"
+                
+                start_time=$SECONDS
+                # Use uv run directly without activating venv
+                uv run --no-sync python "$file" || exit 1
+                duration=$((SECONDS - start_time))
+                echo "Finished in ${duration}s."
+                
+                echo "$(basename "$file"): ${duration}s" >> "$summary_file"
+              fi
+            done
+            
+            echo
+            echo "==================================="
+            echo "       Final Runtime Summary       "
+            echo "==================================="
+            cat "$summary_file"
+            echo "==================================="
 
   build-package:
     runs-on: ubuntu-latest
@@ -249,17 +280,22 @@ jobs:
         python-version: ['3.12']
     steps:
       - uses: actions/checkout@v5
+
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+
       - name: Install dependencies
         run: uv sync --all-extras
+
       - name: Build package
         run: uv build
+
       - name: Check content of wheel
         run: unzip -l dist/*.whl
+
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
         with:
@@ -279,14 +315,17 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: true
           enable-cache: false
+
       - name: Install package
         run: |
           uv pip install dist/*.whl
+
       - name: Run docling
         run: uv run docling --help
