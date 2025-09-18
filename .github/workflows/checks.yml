@@ -67,6 +67,9 @@ jobs:
       steps:
         - uses: actions/checkout@v5
 
+        - name: Grant permissions to APT cache directory # allows restore
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+
         - name: Cache APT packages
           id: apt-cache
           uses: actions/cache@v4
@@ -120,7 +123,7 @@ jobs:
             files: ./coverage.xml
             flags: run-tests-1
 
-        - name: Grant permissions to APT cache directory
+        - name: Grant permissions to APT cache directory # allows backup
           run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-tests-2:
@@ -131,6 +134,9 @@ jobs:
           python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
       steps:
         - uses: actions/checkout@v5
+
+        - name: Grant permissions to APT cache directory # allows restore
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
         - name: Cache APT packages
           id: apt-cache
@@ -185,7 +191,7 @@ jobs:
             files: ./coverage.xml
             flags: run-tests-2
 
-        - name: Grant permissions to APT cache directory
+        - name: Grant permissions to APT cache directory # allows backup
           run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-examples:
@@ -196,6 +202,9 @@ jobs:
           python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
       steps:
         - uses: actions/checkout@v5
+
+        - name: Grant permissions to APT cache directory # allows restore
+          run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
         - name: Cache APT packages
           id: apt-cache
@@ -268,7 +277,7 @@ jobs:
             cat "$summary_file"
             echo "==================================="
 
-        - name: Grant permissions to APT cache directory
+        - name: Grant permissions to APT cache directory # allows backup
           run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   build-package:
