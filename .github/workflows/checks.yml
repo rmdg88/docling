@@ -106,12 +106,6 @@ jobs:
 
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
-        
-        - name: Verify Cache Directories Content
-          run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
 
         - name: Run tests for GROUP1
           run: |
@@ -119,6 +113,12 @@ jobs:
             GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
             echo "Running tests for $GROUP1"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
+
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -178,12 +178,6 @@ jobs:
 
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
-        
-        - name: Verify Cache Directories Content
-          run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
 
         - name: Run tests for GROUP2
           run: |
@@ -191,6 +185,12 @@ jobs:
             GROUP2=$PYTEST_ML
             echo "Running tests for $GROUP2"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 --deselect $PYTEST_TO_SKIP
+
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
 
         - name: Upload coverage to Codecov
           if: inputs.push_coverage
@@ -251,12 +251,6 @@ jobs:
         - name: Pre-download ML Models
           run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
-        - name: Verify Cache Directories Content
-          run: |
-            ls -R ~/.cache/huggingface
-            ls -R ~/.cache/rapidocr
-            ls -R ~/.EasyOCR/
-
         - name: Activate venv and run examples
           run: |
             echo "--- Creating output directory ---"
@@ -290,6 +284,12 @@ jobs:
             cat "$summary_file"
             echo "==================================="
 
+        - name: Verify Cache Directories Content
+          run: |
+            ls -R ~/.cache/huggingface
+            ls -R ~/.cache/rapidocr
+            ls -R ~/.EasyOCR/
+            
   build-package:
     runs-on: ubuntu-latest
     strategy:
