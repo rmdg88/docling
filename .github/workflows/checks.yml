@@ -70,6 +70,7 @@ jobs:
           key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
           restore-keys: |
             apt-packages-${{ runner.os }}-
+          sudo: true
       - name: Install System Dependencies
         run: |
           sudo apt-get -qq update
@@ -127,6 +128,7 @@ jobs:
           key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
           restore-keys: |
             apt-packages-${{ runner.os }}-
+          sudo: true
       - name: Install System Dependencies
         run: |
           sudo apt-get -qq update
@@ -182,6 +184,7 @@ jobs:
           key: apt-packages-${{ runner.os }}-${{ hashFiles('**/checks.yml') }}
           restore-keys: |
             apt-packages-${{ runner.os }}-
+          sudo: true
       - name: Install System Dependencies
         run: |
           sudo apt-get -qq update
@@ -281,6 +284,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: true
+          enable-cache: false
       - name: Install package
         run: |
           uv pip install dist/*.whl
